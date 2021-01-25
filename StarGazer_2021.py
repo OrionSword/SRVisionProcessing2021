@@ -11,7 +11,7 @@ import time
 import copy
 import glob
 
-import CircleInformation
+import CircleInformation as CI
 
 KEY_ESCAPE = 27
 
@@ -132,7 +132,7 @@ while cont:
         """
 
         # Find Circles
-        circles = CircleInformation.getCircles(mask_im)
+        circles = CI.getCircles(mask_im)
         
         end_time = time.time() #END TIMING
 
@@ -143,15 +143,6 @@ while cont:
             im_with_keypoints = contour.draw(im_with_keypoints)
         """
         #end_time = time.time() #END TIMING
-
-        # Draw Circles
-        #print(circles)
-
-        for i in circles[0]:
-            # draw the outer circle
-            cv2.circle(im_with_keypoints, (i[0], i[1]), round(i[2]), (0,255,0), 2)
-            # draw the center of the circle
-            cv2.circle(im_with_keypoints, (i[0], i[1]), 2, (0,0,255), 3)
 
         #Draw frame time
         font                   = cv2.FONT_HERSHEY_SIMPLEX
@@ -167,6 +158,23 @@ while cont:
             fontColor,
             lineType)
 
+        # Draw Circles
+        #print(circles)
+
+        for i in circles[0]:
+            # draw the outer circle
+            cv2.circle(im_with_keypoints, (i[0], i[1]), round(i[2]), (0,255,0), 2)
+            # draw the center of the circle
+            #cv2.circle(im_with_keypoints, (i[0], i[1]), 2, (0,0,255), 3)
+
+            im_with_keypoints = cv2.putText(im_with_keypoints,"Distance: " + str(round(CI.distToCamera(i, im.shape[0]) / 304.8, 2)), 
+                (i[0], i[1]), 
+                font, 
+                0.75,
+                (0, 0, 255),
+                lineType)
+            
+
         #Display the images
         combined_im = cv2.vconcat([im_with_keypoints, mask_im_bgr])
         
@@ -178,5 +186,6 @@ while cont:
 
 #CLEAN UP
 cv2.destroyAllWindows()
+vid_source.release()
 
 

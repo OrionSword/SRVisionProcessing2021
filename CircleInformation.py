@@ -5,11 +5,13 @@
 
 import cv2
 import math
+import glob
+import numpy as np
 
-# Vars needed to calculate distance to camera
-CAMERA_FOCAL_LENGTH = 0
-CAMERA_SENSOR_HEIGHT = 0
-OBJECT_REAL_HEIGHT = 0
+# Vars needed to calculate distance to camera (all measurements are in mm)
+CAMERA_FOCAL_LENGTH = 4.6
+CAMERA_SENSOR_HEIGHT = 4.55
+OBJECT_REAL_HEIGHT = 177.8
 
 # Redundant - needs improved
 def pointDistance(X1, Y1, X2, Y2):
@@ -91,6 +93,49 @@ def distToCamera(circle, imHeight):
     '''
     return (CAMERA_FOCAL_LENGTH * OBJECT_REAL_HEIGHT * imHeight) / (circle[2] * 2 * CAMERA_SENSOR_HEIGHT)
 
+# Directly copied from https://github.com/OrionSword/SRVisionProcessing2020/blob/master/StarGazer_Current.py
+def calibrateCamera():
+    #CAMERA CALIBRATION (from https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_calib3d/py_calibration/py_calibration.html)
+    # termination criteria
+    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
+    # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
+    objp = np.zeros((10*7,3), np.float32)
+    square_size = 0.02 #in meters
+    for i in range(0,7): #the y coordinate
+        for j in range(0,10): #the x coordinate
+            objp[i*10 + j][0] = j * square_size
+            objp[i*10 + j][1] = i * square_size
 
-#print(circleOverlap([0, 0, 10], [10, 0, 2], 0.3))
+    # Arrays to store object points and image points from all the images.
+    objpoints = [] # 3d point in real world space
+    imgpoints = [] # 2d points in image plane.
+
+    #get a list of all the calibration images from the folder
+    calibration_images = glob.glob(r"Calibration_Images\*.jpg")
+
+    for grid_img in calibration_images:
+        img = cv2.resize(cv2.imread(grid_img), (960,454))
+        gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+
+        # Find the chess board corners
+        ret, corners = cv2.findChessboardCorners(gray, (10,7),None)
+
+        # If found, add object points, image points (after refining them)
+        if ret == True:
+            objpoints.append(objp)
+
+            corners2 = cv2.cornerSubPix(gray,corners,(11,11),(-1,-1),criteria)
+            imgpoints.append(corners2)
+
+            # Draw and display the corners
+            #img = cv2.drawChessboardCorners(img, (10,7), corners2,ret)
+            #cv2.imshow('img',img)
+            #cv2.waitKey(500)
+            print("Finished: ", grid_img)
+        else:
+            print("FAILED!!!! Chessboard corner finding failed on: ", grid_img)
+
+    ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1],None,None)
+
+    print(mtx[0][0], " ", mtx[1][1])
