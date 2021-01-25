@@ -11,6 +11,8 @@ import time
 import copy
 import glob
 
+import CircleInformation
+
 KEY_ESCAPE = 27
 
 def PointDistance(X1, Y1, X2, Y2):
@@ -128,6 +130,9 @@ while cont:
 
         contours = [  SRContour(contour, approx_poly_tolerance, 8) for contour in contour_data[0] if len(contour) >= min_points  ] #strips out the "contours" that have less than the specified number of points
         """
+
+        # Find Circles
+        circles = CircleInformation.getCircles(mask_im)
         
         end_time = time.time() #END TIMING
 
@@ -139,6 +144,15 @@ while cont:
         """
         #end_time = time.time() #END TIMING
 
+        # Draw Circles
+        #print(circles)
+
+        for i in circles[0]:
+            # draw the outer circle
+            cv2.circle(im_with_keypoints, (i[0], i[1]), round(i[2]), (0,255,0), 2)
+            # draw the center of the circle
+            cv2.circle(im_with_keypoints, (i[0], i[1]), 2, (0,0,255), 3)
+
         #Draw frame time
         font                   = cv2.FONT_HERSHEY_SIMPLEX
         bottomLeftCornerOfText = (10,30)
@@ -146,7 +160,7 @@ while cont:
         fontColor              = (255,255,255)
         lineType               = 1
 
-        im_with_keypoints = cv2.putText(im_with_keypoints,"Time: "+str(end_time - start_time), 
+        im_with_keypoints = cv2.putText(im_with_keypoints,"Time: "+ str(round((end_time - start_time) * 1000, 2)) + " ms", 
             bottomLeftCornerOfText, 
             font, 
             fontScale,
