@@ -124,6 +124,18 @@ while cont:
         mask_im = cv2.dilate(mask_im, kernel, iterations=1)
         mask_im_bgr = cv2.cvtColor(mask_im, cv2.COLOR_GRAY2BGR)
 
+        cutOut = cv2.subtract(mask_im_bgr, im)
+        cutOut = cv2.subtract(mask_im_bgr, cutOut)
+        cutOut = cv2.cvtColor(cutOut, cv2.COLOR_BGR2GRAY)
+
+        cannyOut = cv2.Canny(cutOut, 40, 140)
+
+        #mask_im_bgr = np.bitwise_or(cutOut, cannyOut[:,:,np.newaxis])
+        mask_im_bgr = cv2.cvtColor(cannyOut, cv2.COLOR_GRAY2BGR)
+        
+
+        
+
         #Detect blobs
         """
         contour_data = cv2.findContours(mask_im, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE) #RETR_EXTERNAL RETR_LIST
@@ -132,7 +144,7 @@ while cont:
         """
 
         # Find Circles
-        circles = CI.getCircles(mask_im)
+        circles = CI.getCircles(cutOut)
         
         end_time = time.time() #END TIMING
 
@@ -151,7 +163,7 @@ while cont:
         fontColor              = (255,255,255)
         lineType               = 1
 
-        im_with_keypoints = cv2.putText(im_with_keypoints,"Time: "+ str(round((end_time - start_time) * 1000, 2)) + " ms", 
+        im_with_keypoints = cv2.putText(im_with_keypoints,"Time: "+ str(round((end_time - start_time) * 1000, 2)) + " ms - frame: " + str(current_frame), 
             bottomLeftCornerOfText, 
             font, 
             fontScale,
@@ -161,14 +173,14 @@ while cont:
         # Draw Circles
         #print(circles)
 
-        for i in circles[0]:
+        for i in circles:
             # draw the outer circle
-            cv2.circle(im_with_keypoints, (i[0], i[1]), round(i[2]), (0,255,0), 2)
+            cv2.circle(im_with_keypoints, (round(i[0]), round(i[1])), round(i[2]), (0,255,0), 2)
             # draw the center of the circle
             #cv2.circle(im_with_keypoints, (i[0], i[1]), 2, (0,0,255), 3)
 
             im_with_keypoints = cv2.putText(im_with_keypoints,"Distance: " + str(round(CI.distToCamera(i, im.shape[0]) / 304.8, 2)), 
-                (i[0], i[1]), 
+                (round(i[0]), round(i[1])), 
                 font, 
                 0.75,
                 (0, 0, 255),
@@ -179,9 +191,14 @@ while cont:
         combined_im = cv2.vconcat([im_with_keypoints, mask_im_bgr])
         
         cv2.imshow("Images", combined_im)
-        
-        if cv2.waitKey(20) == KEY_ESCAPE: #cv2.waitKey(20) & 0xFF == ord('q')
+
+
+        key = cv2.waitKey(20)
+
+        if key == KEY_ESCAPE: #cv2.waitKey(20) & 0xFF == ord('q')
             break
+        elif key == ord(' '):
+            time.sleep(1)
 
 
 #CLEAN UP
