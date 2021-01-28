@@ -61,8 +61,8 @@ def getCircles(inp):
     image = cv2.GaussianBlur(inp, (7, 7), 1.5)
 
     # Finds all circles in image
-    circles = cv2.HoughCircles(image, cv2.HOUGH_GRADIENT, 1, 20, param1 = 70,
-                               param2 = 25, minRadius = 0, maxRadius = 0)
+    circles = cv2.HoughCircles(image, cv2.HOUGH_GRADIENT, 1.5, 20, param1 = 140,
+                               param2 = 40, minRadius = 10, maxRadius = 150)
 
     # HoughCircles returns none if there are no circles. To make
     # programming easier, return an empty array instead.
@@ -76,6 +76,7 @@ def getCircles(inp):
     # overlap more than the threshold, remove the smaller one.
 
     cur = 0
+    
     
     while cur != circles.shape[0]:
         for j in range(circles.shape[0] - 1, cur, -1):
@@ -93,8 +94,9 @@ def getCircles(inp):
                     break
 
         cur += 1
+    
 
-    return circles
+    return circles.tolist()
 
 def distToCamera(circle, imHeight):
     '''
