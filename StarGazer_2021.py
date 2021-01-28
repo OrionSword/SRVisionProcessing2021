@@ -151,7 +151,7 @@ while cont:
         fontColor              = (255,255,255)
         lineType               = 1
 
-        im_with_keypoints = cv2.putText(im_with_keypoints,"Time: "+ str(round((end_time - start_time) * 1000, 2)) + " ms", 
+        im_with_keypoints = cv2.putText(im_with_keypoints,"Time: "+ str(round((end_time - start_time) * 1000, 2)) + " ms - frame: " + str(current_frame), 
             bottomLeftCornerOfText, 
             font, 
             fontScale,
@@ -161,7 +161,7 @@ while cont:
         # Draw Circles
         #print(circles)
 
-        for i in circles[0]:
+        for i in circles:
             # draw the outer circle
             cv2.circle(im_with_keypoints, (i[0], i[1]), round(i[2]), (0,255,0), 2)
             # draw the center of the circle
@@ -179,9 +179,14 @@ while cont:
         combined_im = cv2.vconcat([im_with_keypoints, mask_im_bgr])
         
         cv2.imshow("Images", combined_im)
-        
-        if cv2.waitKey(20) == KEY_ESCAPE: #cv2.waitKey(20) & 0xFF == ord('q')
+
+
+        key = cv2.waitKey(20)
+
+        if key == KEY_ESCAPE: #cv2.waitKey(20) & 0xFF == ord('q')
             break
+        elif key == ord(' '):
+            time.sleep(1)
 
 
 #CLEAN UP

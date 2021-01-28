@@ -18,6 +18,8 @@ def pointDistance(X1, Y1, X2, Y2):
     return math.sqrt((X2-X1)**2 + (Y2-Y1)**2)
 
 def circleOverlap(circleA, circleB, overlapThresh):
+    # https://mathworld.wolfram.com/Circle-CircleIntersection.html
+
     # Get radii and distance between centers
     a = min(circleA[2], circleB[2])
     b = max(circleA[2], circleB[2])
@@ -33,16 +35,16 @@ def circleOverlap(circleA, circleB, overlapThresh):
     b2 = math.pow(b, 2)
     d2 = math.pow(d, 2)
 
-    if (d <= b - a):
+    if d + a <= b:
         # The smaller circle is completely inside the larger one. Just get its area.
         overlapArea =  math.pi * a2
     else:
         # Calculate the area of the shape formed by the intersection of the two circles.
-        x = (a2 - b2 + d2) / (2 * d)
-        z = x * x
-        y = math.sqrt(a2 - z)
+        x = a2 * math.acos((d2 + a2 - b2) / (2 * d * a))
+        z = b2 * math.acos((d2 + b2 - a2) / (2 * d * b))
+        y = math.sqrt((-d + a + b) * (d + a - b) * (d - a + b) * (d + a + b)) / 2
     
-        overlapArea = a2 * math.asin(y / a) + b2 * math.asin(y / b) - y * (x + math.sqrt(z + b2 - a2))
+        overlapArea = x + z - y
 
     # The percentage of overlap is the ratio of the area of the
     # overlapping area to the area of the smaller circle.
@@ -65,22 +67,33 @@ def getCircles(inp):
     # HoughCircles returns none if there are no circles. To make
     # programming easier, return an empty array instead.
     if circles is None:
-        return [[]]
+        return []
+    else:
+        circles = circles[0]
 
     # Compare all the circles in the array and ensure there are none
     # that overlap more than the threshold percentage. If two circles
     # overlap more than the threshold, remove the smaller one.
-    for i in range(0, circles[0].size, -1):
-        for j in range(0, i - 1, -1):
-            circleA = circles[0][i]
-            circleB = circles[0][j]
+
+    cur = 0
+    
+    while cur != circles.shape[0]:
+        for j in range(circles.shape[0] - 1, cur, -1):
+
+            circleA = circles[cur]
+            circleB = circles[j]
 
             if circleOverlap(circleA, circleB, OVERLAP_THRESHOLD):
-                print("Overlap detected")
+
                 if (circleA[2] > circleB[2]):
-                    del circles[j]
+                    circles = np.delete(circles, j, axis=0)
                 else:
-                    del circles[i]
+                    circles = np.delete(circles, cur, axis=0)
+                    cur -= 1
+                    break
+
+        cur += 1
+
     return circles
 
 def distToCamera(circle, imHeight):
@@ -139,3 +152,20 @@ def calibrateCamera():
     ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1],None,None)
 
     print(mtx[0][0], " ", mtx[1][1])
+
+if __name__ == '__main__':
+    frame = cv2.imread("186.png")
+
+    upper_thresholds = np.array([38, 255, 255])
+    lower_thresholds = np.array([19, 62, 158])
+
+    im = cv2.resize(frame, (960,540))#downscale the frame as well to save processing power
+    im_hsv = cv2.cvtColor(im, cv2.COLOR_BGR2HSV) #Convert BGR (RGB) to HSV
+    mask_im = cv2.inRange(im_hsv, lower_thresholds, upper_thresholds)
+    kernel = np.ones((5,5), np.uint8)
+    mask_im = cv2.erode(mask_im, kernel, iterations=1)
+    mask_im = cv2.dilate(mask_im, kernel, iterations=1)
+
+    circles = getCircles(mask_im)
+
+    print(circles)
