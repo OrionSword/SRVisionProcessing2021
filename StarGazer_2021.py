@@ -83,6 +83,9 @@ cv2.createTrackbar("V Low","Thresholds",158,255,lambda x:x) #158
 cv2.namedWindow("Images")
 cv2.moveWindow("Images", 700, 0)
 
+# Init Position smoother
+ps = CI.PositionSmoother(3, 15)
+
 #is it loop time brother
 min_points = 3
 approx_poly_tolerance = 5
@@ -144,7 +147,7 @@ while cont:
         """
 
         # Find Circles
-        circles = CI.getCircles(cutOut)
+        circles = ps.smooth(CI.getCircles(cutOut))
         
         end_time = time.time() #END TIMING
 
@@ -193,7 +196,7 @@ while cont:
         cv2.imshow("Images", combined_im)
 
 
-        key = cv2.waitKey(20)
+        key = cv2.waitKey(10)
 
         if key == KEY_ESCAPE: #cv2.waitKey(20) & 0xFF == ord('q')
             break

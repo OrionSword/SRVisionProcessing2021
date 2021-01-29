@@ -8,10 +8,78 @@ import math
 import glob
 import numpy as np
 
+class PositionSmoother():
+    MATCH_THRESHOLD = 40
+
+    def __init__(self, positionFactor, radiusFactor):
+        # How many frames to smooth the positions of circles over
+        self.positionFactor = positionFactor
+
+        # How many frames to smooth the radii of circles over
+        self.radiusFactor = radiusFactor
+
+        self.history = []
+        self.links = []
+
+    def smooth(self, circles):
+        if self.positionFactor == 0 and self.radiusFactor == 0:
+            return circles
+        
+        if len(self.history) == max(self.positionFactor, self.radiusFactor):
+            del self.history[0]
+            del self.links[0]
+
+        self.history.append(circles)
+        self.links.append([-1]*len(circles))
+
+        res = []
+        
+        for i, circle in enumerate(circles):
+            if len(self.history) < 2:
+                break
+            for j, previous in enumerate(self.history[-2]):
+                # If the current circle is within MATCH_THRESHOLD pixels of a
+                # circle in the last frame, assume they are the same circle
+                # and smooth accordingly.
+                if circleDistance(circle, previous) < self.MATCH_THRESHOLD:
+                    self.links[-1][i] = j
+                    break
+            res.append(self.smoothPos(i))
+
+        return res
+
+    def smoothPos(self, index):
+        avg = [0]*3
+
+        next = index
+        factor = 0
+        for i in range(len(self.history) - 1, -1, -1):
+            if factor < self.positionFactor:
+                avg = [avg[j] + self.history[i][next][j] for j in range(3)]
+            elif factor <= self.radiusFactor:
+                avg[2] += self.history[i][next][2]
+
+            factor += 1
+
+            next = self.links[i][next]
+            if next == -1:
+                break
+
+        avg[0] /= min(factor, self.positionFactor)
+        avg[1] /= min(factor, self.positionFactor)
+        avg[2] /= factor
+        
+        return avg
+
+
 # Vars needed to calculate distance to camera (all measurements are in mm)
 CAMERA_FOCAL_LENGTH = 4.6
 CAMERA_SENSOR_HEIGHT = 4.55
 OBJECT_REAL_HEIGHT = 177.8
+
+def circleDistance(circleA, circleB):
+    return math.sqrt(sum([(circleA[i] - circleB[i])**2 for i in range(2)]))
+
 
 # Redundant - needs improved
 def pointDistance(X1, Y1, X2, Y2):
