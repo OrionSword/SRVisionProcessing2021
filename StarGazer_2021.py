@@ -64,10 +64,11 @@ def DrawClosedContour(image, contour, color=(0,0,255), thiccness=1):
 
 
 #Load video
-vid_source = cv2.VideoCapture(r"Sample Footage\20210121_193221.mp4")
+vid_source = cv2.VideoCapture(r"Sample Footage\GS_A_B_2.h264")
 total_frames = vid_source.get(cv2.CAP_PROP_FRAME_COUNT)
 current_frame = 0
 success = True
+pause = False
 
 #Create window
 cv2.namedWindow("Thresholds") #, cv2.WINDOW_AUTOSIZE
@@ -105,16 +106,15 @@ while cont:
 
         #Read Image from video file
         #need to move the pointer back to beginning of the video if we reach the end (i.e. loop the video)
-        if current_frame >= (total_frames-1):
-            vid_source.set(cv2.CAP_PROP_POS_FRAMES, 0)
-            current_frame = 0
-        else:
+
+        if not pause:
+            success, frame = vid_source.read()
             current_frame += 1
 
-        success, frame = vid_source.read()
         if not success:
-            print("FRAME CAPTURE FAILED")
-            break
+            vid_source.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            current_frame = 0
+            continue
         
         im = cv2.resize(frame, (960,540))#downscale the frame as well to save processing power
         im_hsv = cv2.cvtColor(im, cv2.COLOR_BGR2HSV) #Convert BGR (RGB) to HSV
@@ -196,12 +196,12 @@ while cont:
         cv2.imshow("Images", combined_im)
 
 
-        key = cv2.waitKey(10)
+        key = cv2.waitKey(20)
 
         if key == KEY_ESCAPE: #cv2.waitKey(20) & 0xFF == ord('q')
             break
         elif key == ord(' '):
-            time.sleep(1)
+            pause = not pause
 
 
 #CLEAN UP
